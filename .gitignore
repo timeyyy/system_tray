@@ -1,0 +1,7 @@
+*.*~
+*.log
+*.txt
+*.pyc
+*.pyo
+*egg-info
+
