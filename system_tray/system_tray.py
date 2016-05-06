@@ -195,7 +195,7 @@ class SystemTray():
                     except queue.Empty:
                         pass
                     else:
-                        self.consumer(data)
+                        thread.start_new_thread(self.consumer, (data,))
             else:
                 while 1:
                     try:
@@ -203,7 +203,7 @@ class SystemTray():
                     except queue.Empty:
                         pass
                     else:
-                        data()
+                        thread.start_new_thread(data, (),)
                 time.sleep(0.01)
         thread.start_new_thread(threaded_consumer, ())
 
@@ -237,7 +237,7 @@ if __name__ == '__main__':
     TOOLTIP = 'testing_tooltip'
     
     def dodo():
-        # time.sleep(5)
+        time.sleep(5)
         print('done')
     MENU_OPTIONS = (('ass', None, lambda menu_item: print(menu_item)),
                     ('do', None, lambda menu_item: print(menu_item)),
@@ -251,7 +251,7 @@ if __name__ == '__main__':
         ICON_FILE,
         TOOLTIP,
         menu_options=MENU_OPTIONS,
-        # consumer=consumer,
+        consumer=consumer,
         error_on_no_icon=True)
 
     while True:
