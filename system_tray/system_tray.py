@@ -86,7 +86,14 @@ class FormBuilder:
                         for funct, text, dict_name, where, config in sub_items:
                             yield(h, j, funct, text, dict_name, where, config)
 
-
+# TBD see here.. http://stackoverflow.com/questions/11040098/cannot-pass-arguments-from-the-tkinter-widget-after-function#_=_
+def named_partial(func, *args, **kwargs):
+        # attribute error because there is no
+        # __name__ method found when using functools.partial,this resolves that
+        name = func.__name__
+        function = partial(func, *args, **kwargs)
+        function.__name__ = name
+        return function
 class SystemTray():
     '''
     hi
@@ -147,6 +154,10 @@ class SystemTray():
                     aind.set_status(appindicator.IndicatorStatus.ACTIVE)
                     gtkmenu = gtk.Menu()
                     
+                    if hasattr(self, 'shutdown'):
+                        quitter = ('Quit', None, lambda e: self.shutdown()),
+                        self.menu_options += quitter
+
                     gtk_menu_items = []
                     self.menu_options = FormBuilder(self.menu_options)
                     for row, col, text, icon, command in self.menu_options: 
@@ -162,32 +173,38 @@ class SystemTray():
                         item.show()
 
                     for item, options in zip(gtk_menu_items, self.menu_options):
-                        command = options[-1]
-                        item.connect('activate', lambda menu_item: self.tray_queue.put(partial(command, menu_item)))
-                        print('connected %s to %s', item, command)
-                        #~ print('running the command')
-                        #~ command('ass')
+                        self._connect_item(item, options[-1])
                     while True:
                         gtk.main()
                         Gdk.threads_leave()
                 except TypeError:
                     pass
         thread.start_new_thread(_start_tray, ())
+
+    def _connect_item(self, item, command):
+        def func(menu_item):
+            self.tray_queue.put(named_partial(command, menu_item))
+        item.connect('activate', func)
     
     def _tray_consumer(self):
         def threaded_consumer(): 
-            try:
-                data = self.tray_queue.get(block=False)
-            except queue.Empty:
-                pass
+            if callable(self.consumer):
+                while 1:
+                    try:
+                        data = self.tray_queue.get(block=False)
+                    except queue.Empty:
+                        pass
+                    else:
+                        self.consumer(data)
             else:
-                if not callable(self.consumer):
-                    data()
-                else:
-                    # the user provided a function to handle events
-                    self.consumer(data)
-            time.sleep(0.05)
-            self._tray_consumer()
+                while 1:
+                    try:
+                        data = self.tray_queue.get(block=False)
+                    except queue.Empty:
+                        pass
+                    else:
+                        data()
+                time.sleep(0.01)
         thread.start_new_thread(threaded_consumer, ())
 
 class SystemTaskbar():
@@ -219,28 +236,26 @@ if __name__ == '__main__':
     ICON_FILE = os.path.join(os.getcwd(), 'mario.ico')      # on windows doesn't ahve to be with getcwd(), but on linux yes...
     TOOLTIP = 'testing_tooltip'
     
-    MENU_OPTIONS = (('Open Smart Overlay', None, lambda menu_item: print('ass')),
-                    ('close', None, lambda menu_item: print('dodo2')),
-                    ('close', None, lambda menu_item: print('aaaa')))
+    def dodo():
+        # time.sleep(5)
+        print('done')
+    MENU_OPTIONS = (('ass', None, lambda menu_item: print(menu_item)),
+                    ('do', None, lambda menu_item: print(menu_item)),
+                    ('aa', None, lambda menu_item: dodo()))
 
     def consumer(callback):
-        print('custom consumer')
+        print('custom consumer', callback)
         callback()
 
     sys_tray = SystemTray(
         ICON_FILE,
         TOOLTIP,
         menu_options=MENU_OPTIONS,
-        #~ consumer=consumer,
+        # consumer=consumer,
         error_on_no_icon=True)
 
     while True:
-        try:
-            func = sys_tray.tray_queue.get(block=False)
-        except queue.Empty:
-            pass
-        else:
-            func()
+        pass
 
 # References
 # Taskbar Https://bbs.archlinux.org/viewtopic.php?id=121303
