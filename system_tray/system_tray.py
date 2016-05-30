@@ -174,9 +174,9 @@ class SystemTray():
 
                     for item, options in zip(gtk_menu_items, self.menu_options):
                         self._connect_item(item, options[-1])
-                    while True:
-                        gtk.main()
-                        Gdk.threads_leave()
+                    # while True:
+                    gtk.main()
+                        # Gdk.threads_leave()
                 except TypeError:
                     pass
         thread.start_new_thread(_start_tray, ())
@@ -190,21 +190,12 @@ class SystemTray():
         def threaded_consumer(): 
             if callable(self.consumer):
                 while 1:
-                    try:
-                        data = self.tray_queue.get(block=False)
-                    except queue.Empty:
-                        pass
-                    else:
-                        thread.start_new_thread(self.consumer, (data,))
+                    data = self.tray_queue.get(block=True)
+                    thread.start_new_thread(self.consumer, (data,))
             else:
                 while 1:
-                    try:
-                        data = self.tray_queue.get(block=False)
-                    except queue.Empty:
-                        pass
-                    else:
-                        thread.start_new_thread(data, (),)
-                time.sleep(0.01)
+                    data = self.tray_queue.get(block=True)
+                    thread.start_new_thread(data, (),)
         thread.start_new_thread(threaded_consumer, ())
 
 class SystemTaskbar():
@@ -255,6 +246,7 @@ if __name__ == '__main__':
         error_on_no_icon=True)
 
     while True:
+        time.sleep(20)
         pass
 
 # References
@@ -266,103 +258,3 @@ if __name__ == '__main__':
 # Gdk.threads_init()
 # Gdk.threads_enter()
 
-'''
-    def traySetup(self):
-        if os.name != 'posix':
-            def mer():
-                # TBD FIX THE TRAY FOR UBUNTU after compile throws this error..
-                with ignored(TypeError):
-                    a = appindicator.Indicator.new(
-                        'tim',
-                        os.getcwd() +
-                        '/' +
-                        self.imgdir +
-                        'firebird.gif',
-                        appindicator.IndicatorCategory.APPLICATION_STATUS)
-                    a.set_status(appindicator.IndicatorStatus.ACTIVE)
-                    m = gtk.Menu()
-                    try:
-                        oi = gtk.MenuItem('Open ' + APP_NAME)
-                    except:
-                        pass
-                    #~ ci = gtk.MenuItem('Currently Opened')
-                    #~ ri = gtk.MenuItem('Recently Opened')
-                    qi = gtk.MenuItem('Quit')
-                    m.append(oi)
-                    #~ m.append(ci)
-                    #~ m.append(ri)
-                    m.append(qi)
-                    a.set_menu(m)
-                    oi.show()
-                    #~ ci.show()
-                    #~ ri.show()
-                    qi.show()
-                    oi.connect(
-                        'activate',
-                        lambda e: self.trayQueue.put(
-                            self.root.deiconify))
-                    #~ ci.connect('activate', lambda: 0)
-                    #~ ri.connect('activate', lambda: 0)
-
-                    def quit(item):
-                        gtk.main_quit()
-                        self.trayQueue.put(lambda: gui_base.quitter(self))
-                    qi.connect('activate', quit)
-                    while True:
-                        #~ print('first')
-                        #~ Gdk.threads_enter()
-                        gtk.main()
-                        Gdk.threads_leave()
-                        #~ print('here')
-            #~ GLib.threads_init()
-            #~ Gdk.threads_init()
-            #~ Gdk.threads_enter()
-            #~ print('here')
-
-            thread.start_new_thread(mer, ())
-            #~ print('not here')
-        elif os.name == 'nt':
-            def open():
-                hwnd = int(self.root.wm_frame(), 0)
-                taskbar.add_to_taskbar(hwnd)
-                self.root.deiconify()
-
-            #~ def shutdown(systrayinstance):
-                #~ print(systrayinstance)
-                #~ print(type(systrayinstance))
-                #~ self.trayQueue.put(sys.exit)
-                #~ sys.exit()
-
-            #~ menu_options = (('Open Uncrumpled', None, lambda e: self.trayQueue.put(open)),
-                #~ ('Opended Notes', None, lambda:0),
-                #~ ('Recently Opened', None, (('Say Hello to Simon', None, lambda e:print('shit')),
-                #~ ('Switch Icon', None, lambda e:print('shit')),
-                #~ )))
-            menu_options = (
-                ('Open Uncrumpled',
-                 None,
-                 lambda e: self.trayQueue.put(open)),
-            )
-
-            def mer():
-                img_file = os.path.join(
-                    os.getcwd(),
-                    self.imgdir,
-                    "firebird.ico")
-                tray.SysTrayIcon(
-                    img_file,
-                    "Uncrumpled Smart Overlay",
-                    menu_options,
-                    on_quit=lambda e: self.tray_queue.put(
-                        self.shutdown))
-            thread.start_new_thread(mer, ())
-
-    def tray_consumer(self):
-        try:
-            data = self.trayQueue.get(block=False)
-        except queue.Empty:
-            pass
-        else:
-            data()
-        self.root.after(250, self.tray_consumer)
-    '''
