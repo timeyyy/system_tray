@@ -9,7 +9,7 @@ def read(*paths):
         return f.read()
 setup(
 	name = 'system_tray',
-	version='0.1.0',
+	version='0.1.3',
 	
 	description = 'Help throw up a system tray, cross platform',
 	long_description = (read('README.rst') + '\n\n' +
